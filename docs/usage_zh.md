@@ -109,7 +109,41 @@
 cargo test
 ```
 
-## 8. 示例
+## 8. 序列化（导出/导入）
+
+所有核心类型（`Root`、`Branch`、`Message`、`IsForked`、`GcError` 等）均通过 serde 实现了 `Serialize` 和 `Deserialize`。
+
+### 导出
+
+```rust
+let root = Root::<String>::new("my-chat".to_string());
+let json: String = root.export().expect("export failed");
+// 将 `json` 保存到文件、数据库等
+```
+
+### 导入
+
+```rust
+let json = r#"{"branches":[],"name":"my-chat"}"#;
+let root: Root<String> = Root::import(json).expect("import failed");
+```
+
+### 要求
+
+泛型参数 `ChatType` 必须实现：
+- `Clone`
+- `Serialize`
+- `Deserialize<'de>`
+
+```rust
+#[derive(Clone, Serialize, Deserialize)]
+struct MyMessage {
+    role: String,
+    text: String,
+}
+```
+
+## 9. 示例
 
 - `docs/example.md`
 - `docs/example_zh.md`

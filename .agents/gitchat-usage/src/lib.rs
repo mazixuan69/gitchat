@@ -1,36 +1,39 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Message<ChatType> {
-    pub uuid:Uuid,
-    pub content:ChatType
+    pub uuid: Uuid,
+    pub content: ChatType,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum GcError<ChatType> {
     UuidNotFound,
     StringNotFound,
     MergeRecordNotFound,
     ThingExist,
-    GcMergeHumanError(Branch<ChatType>, Branch<ChatType>)
+    GcMergeHumanError(Branch<ChatType>, Branch<ChatType>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum IsForked {
     False,
-    True(Uuid, Uuid)
+    True(Uuid, Uuid),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Branch<ChatType> {
     pub messages: Vec<Message<ChatType>>,
     pub is_forked: IsForked,
     pub branch_id: Uuid,
-    pub name: String
+    pub name: String,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Root<ChatType> {
     pub branches: Vec<Branch<ChatType>>,
-    pub name: String
+    pub name: String,
 }
 
 impl<ChatType: Clone> Branch<ChatType> {
@@ -39,15 +42,15 @@ impl<ChatType: Clone> Branch<ChatType> {
             messages: vec![],
             is_forked: IsForked::False,
             branch_id: Uuid::new_v4(),
-            name: name
+            name: name,
         }
     }
     pub fn fork(&self, name: String, forked_on: I64OrUuid) -> Result<Self, GcError<ChatType>> {
-        let MsgId:Uuid;
-        let mut finded_vector:Vec<Message<ChatType>>;
+        let MsgId: Uuid;
+        let mut finded_vector: Vec<Message<ChatType>>;
         match forked_on {
             I64OrUuid::MessageId(msg_id) => {
-                let mut finded_id:bool = false;
+                let mut finded_id: bool = false;
                 finded_vector = vec![];
                 for i in &self.messages {
                     finded_vector.push(i.clone());
@@ -62,7 +65,7 @@ impl<ChatType: Clone> Branch<ChatType> {
                 MsgId = msg_id;
             }
             I64OrUuid::Index(MsgIndex) => {
-                if ((&self.messages.len() - 1) as i64 )  < MsgIndex {
+                if ((&self.messages.len() - 1) as i64) < MsgIndex {
                     return Err(GcError::UuidNotFound);
                 }
                 let mut tmp_index = 0;
@@ -82,28 +85,30 @@ impl<ChatType: Clone> Branch<ChatType> {
             messages: finded_vector,
             is_forked: IsForked::True(self.branch_id, MsgId),
             branch_id: Uuid::new_v4(),
-            name: name
+            name: name,
         })
     }
 }
 
 // 这个枚举的作用是让用户既可以传String, 也可以传uuid。这是一个备用设计。
+#[derive(Serialize, Deserialize)]
 pub enum StringOrUuid {
     Name(String),
-    BranchId(Uuid)
+    BranchId(Uuid),
 }
 
 // 同上
+#[derive(Serialize, Deserialize)]
 pub enum I64OrUuid {
     Index(i64),
-    MessageId(Uuid)
+    MessageId(Uuid),
 }
 
 impl<ChatType: Clone> Root<ChatType> {
     pub fn new(name: String) -> Self {
         Self {
             branches: vec![],
-            name: name
+            name: name,
         }
     }
     pub fn create_branch(&mut self, name: String) -> Result<Uuid, GcError<ChatType>> {
@@ -120,7 +125,12 @@ impl<ChatType: Clone> Root<ChatType> {
         }
         unreachable!()
     }
-    pub fn fork_branch(&mut self, forked_on: StringOrUuid, forked_on_message: I64OrUuid, name: String) -> Result<Uuid, GcError<ChatType>> {
+    pub fn fork_branch(
+        &mut self,
+        forked_on: StringOrUuid,
+        forked_on_message: I64OrUuid,
+        name: String,
+    ) -> Result<Uuid, GcError<ChatType>> {
         for i in &mut self.branches {
             if i.name == name {
                 return Err(GcError::ThingExist);
@@ -153,21 +163,32 @@ impl<ChatType: Clone> Root<ChatType> {
     }
 }
 
-#[derive(PartialEq)]
-pub enum MergeMode {
-    Force,
-    Human
+impl<ChatType: Clone + Serialize + for<'de> Deserialize<'de>> Root<ChatType> {
+    pub fn export(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(self)
+    }
+
+    pub fn import(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
+#[derive(PartialEq, Serialize, Deserialize)]
+pub enum MergeMode {
+    Force,
+    Human,
+}
+
+#[derive(Serialize, Deserialize)]
 pub enum ManualMergeAction<ChatType> {
     UseFrom,
     UseTo,
-    UseMessages(Vec<Message<ChatType>>)
+    UseMessages(Vec<Message<ChatType>>),
 }
 
 impl<ChatType: Clone> Root<ChatType> {
     pub fn find_branch_index_by_uuid(&self, id: &Uuid) -> Result<usize, GcError<ChatType>> {
-        let mut index:usize = 0;
+        let mut index: usize = 0;
         for i in &self.branches {
             if i.branch_id == *id {
                 return Ok(index);
@@ -195,7 +216,12 @@ impl<ChatType: Clone> Root<ChatType> {
         self.branches[to_index] = merged;
         Ok(())
     }
-    pub fn merge_tool(&mut self, from: Uuid, to: Uuid, mode: MergeMode) -> Result<(), GcError<ChatType>> {
+    pub fn merge_tool(
+        &mut self,
+        from: Uuid,
+        to: Uuid,
+        mode: MergeMode,
+    ) -> Result<(), GcError<ChatType>> {
         if from == to {
             return Ok(());
         }
@@ -241,8 +267,10 @@ impl<ChatType: Clone> Root<ChatType> {
         }
 
         // Case 3: both are forked from the same parent (siblings)
-        if let (IsForked::True(from_parent, from_fork_line), IsForked::True(to_parent, to_fork_line)) =
-            (&from_branch.is_forked, &to_branch.is_forked)
+        if let (
+            IsForked::True(from_parent, from_fork_line),
+            IsForked::True(to_parent, to_fork_line),
+        ) = (&from_branch.is_forked, &to_branch.is_forked)
         {
             if from_parent == to_parent {
                 if Some(*from_fork_line) == from_last {
@@ -263,7 +291,7 @@ impl<ChatType: Clone> Root<ChatType> {
         &mut self,
         from: Uuid,
         to: Uuid,
-        action: ManualMergeAction<ChatType>
+        action: ManualMergeAction<ChatType>,
     ) -> Result<(), GcError<ChatType>> {
         if from == to {
             return Ok(());
