@@ -24,28 +24,28 @@ fn run_example() -> Result<(), GcError<String>> {
     let mut root = Root::<String>::new("chat-repo".to_string());
 
     // 1) Create main branch
-    let main_id = root.create_breach("main".to_string())?;
+    let main_id = root.create_branch("main".to_string())?;
 
     // 2) Add two messages to main
-    let main_idx = root.find_breach_index_by_uuid(&main_id)?;
+    let main_idx = root.find_branch_index_by_uuid(&main_id)?;
     let m1 = msg("hello");
     let m1_id = m1.uuid;
-    root.breaches[main_idx].messages.push(m1);
-    root.breaches[main_idx].messages.push(msg("how are you"));
+    root.branches[main_idx].messages.push(m1);
+    root.branches[main_idx].messages.push(msg("how are you"));
 
     // 3) Fork dev from main at m1
-    let dev_id = root.fork_breach(
-        StringOrUuid::BreachId(main_id),
+    let dev_id = root.fork_branch(
+        StringOrUuid::BranchId(main_id),
         I64OrUuid::MessageId(m1_id),
         "dev".to_string(),
     )?;
 
     // Add different messages to both sides to create divergence
-    let main_idx = root.find_breach_index_by_uuid(&main_id)?;
-    root.breaches[main_idx].messages.push(msg("main-only message"));
+    let main_idx = root.find_branch_index_by_uuid(&main_id)?;
+    root.branches[main_idx].messages.push(msg("main-only message"));
 
-    let dev_idx = root.find_breach_index_by_uuid(&dev_id)?;
-    root.breaches[dev_idx].messages.push(msg("dev-only message"));
+    let dev_idx = root.find_branch_index_by_uuid(&dev_id)?;
+    root.branches[dev_idx].messages.push(msg("dev-only message"));
 
     // 4) Try human merge: likely conflict in this divergent state
     match root.merge_tool(dev_id, main_id, MergeMode::Human) {
@@ -68,7 +68,7 @@ fn run_example() -> Result<(), GcError<String>> {
 ## Minimal Error Handling Pattern
 
 ```rust
-match root.fork_breach(
+match root.fork_branch(
     StringOrUuid::Name("main".to_string()),
     I64OrUuid::Index(3),
     "feature".to_string(),

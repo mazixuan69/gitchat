@@ -2,13 +2,13 @@
 
 ## Goal -> API Mapping
 
-- Create a branch: `create_breach(name)`
-- Fork from branch by name: `fork_breach(StringOrUuid::Name(...), fork_point, new_name)`
-- Fork from branch by id: `fork_breach(StringOrUuid::BreachId(...), fork_point, new_name)`
+- Create a branch: `create_branch(name)`
+- Fork from branch by name: `fork_branch(StringOrUuid::Name(...), fork_point, new_name)`
+- Fork from branch by id: `fork_branch(StringOrUuid::BranchId(...), fork_point, new_name)`
 - Force merge: `merge_tool(from, to, MergeMode::Force)`
 - Human merge: `merge_tool(from, to, MergeMode::Human)`
 - Manual resolution: `merge_manual(from, to, ManualMergeAction::...)`
-- Delete branch: `remove_breach(id)`
+- Delete branch: `remove_branch(id)`
 
 ## Fork Point Selection
 
@@ -39,4 +39,3 @@
 3. List probable errors for each step.
 4. Add edge-case guardrails.
 5. End with a practical next action.
-

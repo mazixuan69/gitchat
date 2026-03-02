@@ -24,28 +24,28 @@ fn run_example() -> Result<(), GcError<String>> {
     let mut root = Root::<String>::new("chat-repo".to_string());
 
     // 1) 创建 main 分支
-    let main_id = root.create_breach("main".to_string())?;
+    let main_id = root.create_branch("main".to_string())?;
 
     // 2) 给 main 写两条消息
-    let main_idx = root.find_breach_index_by_uuid(&main_id)?;
+    let main_idx = root.find_branch_index_by_uuid(&main_id)?;
     let m1 = msg("你好");
     let m1_id = m1.uuid;
-    root.breaches[main_idx].messages.push(m1);
-    root.breaches[main_idx].messages.push(msg("最近怎么样"));
+    root.branches[main_idx].messages.push(m1);
+    root.branches[main_idx].messages.push(msg("最近怎么样"));
 
     // 3) 在 m1 位置 fork 出 dev
-    let dev_id = root.fork_breach(
-        StringOrUuid::BreachId(main_id),
+    let dev_id = root.fork_branch(
+        StringOrUuid::BranchId(main_id),
         I64OrUuid::MessageId(m1_id),
         "dev".to_string(),
     )?;
 
     // 双方继续演化，制造分叉
-    let main_idx = root.find_breach_index_by_uuid(&main_id)?;
-    root.breaches[main_idx].messages.push(msg("main 独有消息"));
+    let main_idx = root.find_branch_index_by_uuid(&main_id)?;
+    root.branches[main_idx].messages.push(msg("main 独有消息"));
 
-    let dev_idx = root.find_breach_index_by_uuid(&dev_id)?;
-    root.breaches[dev_idx].messages.push(msg("dev 独有消息"));
+    let dev_idx = root.find_branch_index_by_uuid(&dev_id)?;
+    root.branches[dev_idx].messages.push(msg("dev 独有消息"));
 
     // 4) human 合并：此时大概率冲突
     match root.merge_tool(dev_id, main_id, MergeMode::Human) {
@@ -68,7 +68,7 @@ fn run_example() -> Result<(), GcError<String>> {
 ## 最小错误处理模板
 
 ```rust
-match root.fork_breach(
+match root.fork_branch(
     StringOrUuid::Name("main".to_string()),
     I64OrUuid::Index(3),
     "feature".to_string(),
