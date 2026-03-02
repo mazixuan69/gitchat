@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gitchat Usage Guide"
+  short_description: "Guide branch, fork, and merge workflows in gitchat."
+  default_prompt: "Use this skill when the user asks how to use gitchat APIs or model chat histories with branch/fork/merge operations; provide practical workflows, pitfalls, and examples."
