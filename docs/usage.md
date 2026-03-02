@@ -6,11 +6,9 @@ This guide documents the behavior implemented in `src/lib.rs` as of this reposit
 
 `gitchat` models chat history with Git-like semantics:
 - `Root<ChatType>`: repository root, containing multiple branches
-- `Breach<ChatType>`: a branch, holding ordered messages
+- `Branch<ChatType>`: a branch, holding ordered messages
 - `Message<ChatType>`: one message node (`uuid` + `content`)
 - `IsForked`: whether a branch is original or forked from `(parent_branch_id, message_id)`
-
-The naming uses `breach` in code; functionally it behaves like `branch`.
 
 ## 2. Data Structures
 
@@ -24,7 +22,7 @@ The naming uses `breach` in code; functionally it behaves like `branch`.
 - `StringNotFound`
 - `MergeRecordNotFound`
 - `ThingExist`
-- `GcMergeHumanError(Breach<ChatType>, Breach<ChatType>)`
+- `GcMergeHumanError(Branch<ChatType>, Branch<ChatType>)`
 
 ### `ManualMergeAction<ChatType>`
 - `UseFrom`: overwrite target with source
@@ -35,12 +33,12 @@ The naming uses `breach` in code; functionally it behaves like `branch`.
 ## 3. Branch Operations
 
 ### Create branch
-`create_breach(name)`:
+`create_branch(name)`:
 - success: creates empty branch and returns new UUID
 - duplicate name: returns `ThingExist`
 
 ### Fork branch
-`fork_breach(source, fork_point, new_name)`:
+`fork_branch(source, fork_point, new_name)`:
 - source can be branch name or branch UUID
 - fork point can be message UUID or index
 - resulting branch copies messages from start up to fork point (inclusive)
@@ -66,7 +64,7 @@ Errors:
 - tries to infer safe merge from fork metadata
 - if safe fast-forward-like condition is met, it auto-merges or no-ops
 - if both sides diverged after fork line, returns:
-  `GcMergeHumanError(from_breach_snapshot, to_breach_snapshot)`
+  `GcMergeHumanError(from_branch_snapshot, to_branch_snapshot)`
 - if no merge relationship record can be inferred, returns `MergeRecordNotFound`
 
 ### Manual merge
@@ -77,7 +75,7 @@ Errors:
 
 ## 5. Remove Branch
 
-`remove_breach(id)` removes a branch by UUID.
+`remove_branch(id)` removes a branch by UUID.
 
 - success: branch deleted
 - missing ID: `UuidNotFound`
@@ -86,11 +84,10 @@ Errors:
 
 Important for production use:
 
-- `fork_breach` with `Index(0)` on an empty source branch currently panics
+- `fork_branch` with `Index(0)` on an empty source branch currently panics
   (due to index math on empty vector)
-- `fork_breach` with negative index can panic
+- `fork_branch` with negative index can panic
   (can reach `last().unwrap()` on empty temporary vector)
-- many core APIs are private, so this crate is not yet ergonomic as public dependency
 
 These are intentionally documented and covered in tests to avoid hidden surprises.
 
@@ -110,15 +107,7 @@ Run:
 cargo test
 ```
 
-## 8. Practical Integration Advice
-
-Until public API is stabilized, the most practical options are:
-- keep this logic as internal module in your workspace
-- expose your own safe wrapper API around current internals
-- harden fork index validation before using untrusted input
-
-
-## 9. Examples
+## 8. Examples
 
 - `docs/example.md`
 - `docs/example_zh.md`

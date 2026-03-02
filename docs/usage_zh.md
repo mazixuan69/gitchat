@@ -6,11 +6,9 @@
 
 `gitchat` 使用类似 Git 的语义管理聊天历史：
 - `Root<ChatType>`: 根容器，管理多个分支
-- `Breach<ChatType>`: 分支，保存有序消息列表
+- `Branch<ChatType>`: 分支，保存有序消息列表
 - `Message<ChatType>`: 消息节点（`uuid` + `content`）
 - `IsForked`: 标记分支是否由 `(父分支ID, 分叉消息ID)` fork 而来
-
-代码里叫 `breach`，语义上可理解为 `branch`。
 
 ## 2. 主要数据结构
 
@@ -24,7 +22,7 @@
 - `StringNotFound`
 - `MergeRecordNotFound`
 - `ThingExist`
-- `GcMergeHumanError(Breach<ChatType>, Breach<ChatType>)`
+- `GcMergeHumanError(Branch<ChatType>, Branch<ChatType>)`
 
 ### `ManualMergeAction<ChatType>`
 - `UseFrom`: 用来源分支覆盖目标分支
@@ -35,12 +33,12 @@
 ## 3. 分支操作
 
 ### 创建分支
-`create_breach(name)`：
+`create_branch(name)`：
 - 成功：创建空分支并返回 UUID
 - 重名：返回 `ThingExist`
 
 ### Fork 分支
-`fork_breach(source, fork_point, new_name)`：
+`fork_branch(source, fork_point, new_name)`：
 - `source` 支持按分支名或分支 UUID 指定
 - `fork_point` 支持按消息 UUID 或消息索引指定
 - 新分支会复制从起点到 fork 点（含 fork 点）的消息
@@ -66,7 +64,7 @@
 - 基于 fork 元信息判断是否可自动合并
 - 可快进时会自动合并或直接 no-op
 - 若 fork 后两侧都产生分叉修改，返回：
-  `GcMergeHumanError(from_breach_snapshot, to_breach_snapshot)`
+  `GcMergeHumanError(from_branch_snapshot, to_branch_snapshot)`
 - 若推断不出合并关系，返回 `MergeRecordNotFound`
 
 ### 手动合并
@@ -77,7 +75,7 @@
 
 ## 5. 删除分支
 
-`remove_breach(id)` 按 UUID 删除分支。
+`remove_branch(id)` 按 UUID 删除分支。
 
 - 成功：分支被删除
 - UUID 不存在：`UuidNotFound`
@@ -90,9 +88,8 @@
   （空向量参与索引计算导致）
 - 负索引 fork 也可能 panic
   （可能触发空向量 `last().unwrap()`）
-- 核心 API 多为私有，当前还不适合作为对外依赖直接调用
 
-这些行为已在测试中显式覆盖，目的是防止“文档没写但线上踩坑”。
+这些行为已在测试中显式覆盖，目的是防止"文档没写但线上踩坑"。
 
 ## 7. 测试覆盖说明
 
@@ -112,15 +109,7 @@
 cargo test
 ```
 
-## 8. 实践建议
-
-在公开 API 稳定前，建议：
-- 作为工作区内部模块使用
-- 在上层封装一层安全 API（拦截非法索引）
-- 对外输入严格校验后再调用 fork 相关逻辑
-
-
-## 9. 示例
+## 8. 示例
 
 - `docs/example.md`
 - `docs/example_zh.md`
