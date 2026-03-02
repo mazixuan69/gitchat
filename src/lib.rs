@@ -1,36 +1,39 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Message<ChatType> {
-    pub uuid:Uuid,
-    pub content:ChatType
+    pub uuid: Uuid,
+    pub content: ChatType,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum GcError<ChatType> {
     UuidNotFound,
     StringNotFound,
     MergeRecordNotFound,
     ThingExist,
-    GcMergeHumanError(Branch<ChatType>, Branch<ChatType>)
+    GcMergeHumanError(Branch<ChatType>, Branch<ChatType>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum IsForked {
     False,
-    True(Uuid, Uuid)
+    True(Uuid, Uuid),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Branch<ChatType> {
     pub messages: Vec<Message<ChatType>>,
     pub is_forked: IsForked,
     pub branch_id: Uuid,
-    pub name: String
+    pub name: String,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Root<ChatType> {
     pub branches: Vec<Branch<ChatType>>,
-    pub name: String
+    pub name: String,
 }
 
 impl<ChatType: Clone> Branch<ChatType> {
@@ -88,22 +91,24 @@ impl<ChatType: Clone> Branch<ChatType> {
 }
 
 // 这个枚举的作用是让用户既可以传String, 也可以传uuid。这是一个备用设计。
+#[derive(Serialize, Deserialize)]
 pub enum StringOrUuid {
     Name(String),
-    BranchId(Uuid)
+    BranchId(Uuid),
 }
 
 // 同上
+#[derive(Serialize, Deserialize)]
 pub enum I64OrUuid {
     Index(i64),
-    MessageId(Uuid)
+    MessageId(Uuid),
 }
 
 impl<ChatType: Clone> Root<ChatType> {
     pub fn new(name: String) -> Self {
         Self {
             branches: vec![],
-            name: name
+            name: name,
         }
     }
     pub fn create_branch(&mut self, name: String) -> Result<Uuid, GcError<ChatType>> {
@@ -120,7 +125,12 @@ impl<ChatType: Clone> Root<ChatType> {
         }
         unreachable!()
     }
-    pub fn fork_branch(&mut self, forked_on: StringOrUuid, forked_on_message: I64OrUuid, name: String) -> Result<Uuid, GcError<ChatType>> {
+    pub fn fork_branch(
+        &mut self,
+        forked_on: StringOrUuid,
+        forked_on_message: I64OrUuid,
+        name: String,
+    ) -> Result<Uuid, GcError<ChatType>> {
         for i in &mut self.branches {
             if i.name == name {
                 return Err(GcError::ThingExist);
@@ -137,7 +147,7 @@ impl<ChatType: Clone> Root<ChatType> {
                     }
                 }
                 return Err(GcError::StringNotFound);
-            } 
+            }
             StringOrUuid::BranchId(forked_on_uuid) => {
                 for i in &mut self.branches {
                     if i.branch_id == forked_on_uuid {
@@ -151,18 +161,29 @@ impl<ChatType: Clone> Root<ChatType> {
             }
         }
     }
-} 
-
-#[derive(PartialEq)]
-pub enum MergeMode {
-    Force,
-    Human
 }
 
+impl<ChatType: Clone + Serialize + for<'de> Deserialize<'de>> Root<ChatType> {
+    pub fn export(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(self)
+    }
+
+    pub fn import(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
+} 
+
+#[derive(PartialEq, Serialize, Deserialize)]
+pub enum MergeMode {
+    Force,
+    Human,
+}
+
+#[derive(Serialize, Deserialize)]
 pub enum ManualMergeAction<ChatType> {
     UseFrom,
     UseTo,
-    UseMessages(Vec<Message<ChatType>>)
+    UseMessages(Vec<Message<ChatType>>),
 }
 
 impl<ChatType: Clone> Root<ChatType> {

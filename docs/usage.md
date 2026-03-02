@@ -107,7 +107,41 @@ Run:
 cargo test
 ```
 
-## 8. Examples
+## 8. Serialization (Export/Import)
+
+All core types (`Root`, `Branch`, `Message`, `IsForked`, `GcError`, etc.) implement `Serialize` and `Deserialize` via serde.
+
+### Export
+
+```rust
+let root = Root::<String>::new("my-chat".to_string());
+let json: String = root.export().expect("export failed");
+// Save `json` to file, database, etc.
+```
+
+### Import
+
+```rust
+let json = r#"{"branches":[],"name":"my-chat"}"#;
+let root: Root<String> = Root::import(json).expect("import failed");
+```
+
+### Requirements
+
+The `ChatType` generic parameter must implement:
+- `Clone`
+- `Serialize`
+- `Deserialize<'de>`
+
+```rust
+#[derive(Clone, Serialize, Deserialize)]
+struct MyMessage {
+    role: String,
+    text: String,
+}
+```
+
+## 9. Examples
 
 - `docs/example.md`
 - `docs/example_zh.md`

@@ -6,6 +6,7 @@ A lightweight Rust branch-and-merge model for chat/message histories.
 - create branches
 - fork from a message checkpoint
 - merge with force/human/manual strategies
+- export/import to JSON for persistence
 
 ## Quick Start
 
@@ -13,6 +14,11 @@ A lightweight Rust branch-and-merge model for chat/message histories.
 cargo test
 cargo check
 ```
+
+## Features
+
+- **Serialize/Deserialize**: All core types implement `Serialize` and `Deserialize` via serde
+- **Export/Import**: `Root::export()` and `Root::import()` for JSON serialization
 
 ## Documentation
 
@@ -27,6 +33,7 @@ cargo check
 - Merge modes: `Force`, `Human`, and manual merge actions
 - Human-merge conflict detection (`GcMergeHumanError`)
 - Branch deletion
+- Export/Import roundtrip serialization
 - Known panic edge cases for index-based forking on invalid index inputs
 
 ## Known Limitations

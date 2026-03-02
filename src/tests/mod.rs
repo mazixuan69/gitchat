@@ -217,3 +217,59 @@ fn fork_with_negative_index_panics_currently() {
         "dev".to_string(),
     );
 }
+
+#[test]
+fn export_import_roundtrip_empty_root() {
+    let root = Root::<String>::new("empty-repo".to_string());
+    let json = root.export().expect("export should succeed");
+    let restored: Root<String> = Root::import(&json).expect("import should succeed");
+    assert_eq!(root.name, restored.name);
+    assert_eq!(root.branches.len(), restored.branches.len());
+}
+
+#[test]
+fn export_import_roundtrip_with_branches_and_messages() {
+    let mut root = Root::<String>::new("repo".to_string());
+    let main_id = ok(root.create_branch("main".to_string()));
+    let m1 = push_message(&mut root, main_id, "hello");
+    push_message(&mut root, main_id, "world");
+
+    let dev_id = ok(root.fork_branch(
+        StringOrUuid::BranchId(main_id),
+        I64OrUuid::MessageId(m1),
+        "dev".to_string(),
+    ));
+    push_message(&mut root, dev_id, "dev-message");
+
+    let json = root.export().expect("export should succeed");
+    let restored: Root<String> = Root::import(&json).expect("import should succeed");
+
+    assert_eq!(root.name, restored.name);
+    assert_eq!(root.branches.len(), restored.branches.len());
+
+    // Verify main branch
+    let main_idx = ok(root.find_branch_index_by_uuid(&main_id));
+    let restored_main_idx = ok(restored.find_branch_index_by_uuid(&main_id));
+    assert_eq!(
+        root.branches[main_idx].messages.len(),
+        restored.branches[restored_main_idx].messages.len()
+    );
+    assert_eq!(
+        root.branches[main_idx].messages[0].content,
+        restored.branches[restored_main_idx].messages[0].content
+    );
+
+    // Verify dev branch fork metadata
+    let dev_idx = ok(root.find_branch_index_by_uuid(&dev_id));
+    let restored_dev_idx = ok(restored.find_branch_index_by_uuid(&dev_id));
+    assert!(matches!(
+        restored.branches[restored_dev_idx].is_forked,
+        IsForked::True(parent, line) if parent == main_id && line == m1
+    ));
+}
+
+#[test]
+fn import_invalid_json_returns_error() {
+    let result: Result<Root<String>, _> = Root::import("not valid json");
+    assert!(result.is_err());
+}

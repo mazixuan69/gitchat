@@ -6,6 +6,7 @@
 - 创建分支
 - 从某条消息位置 fork
 - 用 force/human/manual 三种策略合并
+- 支持导出/导入 JSON 实现持久化
 
 ## 快速开始
 
@@ -13,6 +14,11 @@
 cargo test
 cargo check
 ```
+
+## 特性
+
+- **序列化/反序列化**：所有核心类型通过 serde 实现 `Serialize` 和 `Deserialize`
+- **导出/导入**：`Root::export()` 和 `Root::import()` 实现 JSON 序列化
 
 ## 文档导航
 
@@ -27,6 +33,7 @@ cargo check
 - 合并模式：`Force`、`Human`、手动合并
 - Human 合并冲突识别（`GcMergeHumanError`）
 - 分支删除
+- 导出/导入序列化往返测试
 - 基于索引 fork 的已知 panic 边界场景
 
 ## 已知限制

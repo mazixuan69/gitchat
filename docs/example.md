@@ -80,3 +80,32 @@ match root.fork_branch(
     Err(_) => println!("other error"),
 }
 ```
+
+## Export/Import Example
+
+```rust
+use crate::{Root, GcError};
+
+fn save_and_load_example() -> Result<(), GcError<String>> {
+    let mut root = Root::<String>::new("chat-repo".to_string());
+    let main_id = root.create_branch("main".to_string())?;
+
+    // Add some messages...
+    let idx = root.find_branch_index_by_uuid(&main_id)?;
+    root.branches[idx].messages.push(Message {
+        uuid: Uuid::new_v4(),
+        content: "hello world".to_string(),
+    });
+
+    // Export to JSON string
+    let json = root.export().expect("export failed");
+    println!("Exported JSON: {}", json);
+
+    // Import back
+    let restored = Root::import(&json).expect("import failed");
+    assert_eq!(root.name, restored.name);
+    assert_eq!(root.branches.len(), restored.branches.len());
+
+    Ok(())
+}
+```

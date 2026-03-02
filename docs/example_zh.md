@@ -80,3 +80,32 @@ match root.fork_branch(
     Err(_) => println!("其他错误"),
 }
 ```
+
+## 导出/导入示例
+
+```rust
+use crate::{Root, GcError};
+
+fn save_and_load_example() -> Result<(), GcError<String>> {
+    let mut root = Root::<String>::new("chat-repo".to_string());
+    let main_id = root.create_branch("main".to_string())?;
+
+    // 添加一些消息...
+    let idx = root.find_branch_index_by_uuid(&main_id)?;
+    root.branches[idx].messages.push(Message {
+        uuid: Uuid::new_v4(),
+        content: "你好世界".to_string(),
+    });
+
+    // 导出为 JSON 字符串
+    let json = root.export().expect("export failed");
+    println!("导出的 JSON: {}", json);
+
+    // 导入回来
+    let restored = Root::import(&json).expect("import failed");
+    assert_eq!(root.name, restored.name);
+    assert_eq!(root.branches.len(), restored.branches.len());
+
+    Ok(())
+}
+```
