@@ -16,10 +16,9 @@ fn make_msg(content: &str) -> Message<String> {
 
 fn push_message(root: &mut Root<String>, branch_id: Uuid, content: &str) -> Uuid {
     let msg = make_msg(content);
-    let msg_id = msg.uuid;
-    let idx = ok(root.find_branch_index_by_uuid(&branch_id));
-    root.branches[idx].messages.push(msg);
-    msg_id
+    let uuid = msg.uuid;
+    root.push_message(branch_id, msg).unwrap();
+    uuid
 }
 
 #[test]
