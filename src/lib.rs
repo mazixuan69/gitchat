@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message<ChatType> {
     pub uuid: Uuid,
     pub content: ChatType,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum GcError<ChatType> {
     UuidNotFound,
     StringNotFound,
@@ -16,13 +16,13 @@ pub enum GcError<ChatType> {
     GcMergeHumanError(Branch<ChatType>, Branch<ChatType>),
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum IsForked {
     False,
     True(Uuid, Uuid),
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Branch<ChatType> {
     pub messages: Vec<Message<ChatType>>,
     pub is_forked: IsForked,
@@ -160,6 +160,11 @@ impl<ChatType: Clone> Root<ChatType> {
                 return Err(GcError::UuidNotFound);
             }
         }
+    }
+    pub fn push_message(&mut self, branch_id: Uuid, message: Message<ChatType>) -> Result<(), GcError<ChatType>> {
+        let index = self.find_branch_index_by_uuid(&branch_id)?;
+        self.branches[index].messages.push(message);
+        Ok(())
     }
 }
 
